@@ -5,6 +5,14 @@ All notable changes to `assemblyai-laravel` will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-10-21
+
+### Fixed
+- Fixed typo in documentation for asynchronous transcript creation (`transcripts()->create` instead of `transcripts()->submit`).
+
+### Added
+- Comprehensive documentation for `TranscriptParams` builder and parameter configuration (speech models, language selection, diarization, audio intelligence, PII redaction, prompts, word boosting).
+
 ## [1.0.0] - 2026-10-20
 
 ### Added

@@ -100,7 +100,52 @@ echo $transcript->id;
 echo $transcript->text;
 ```
 
-With custom transcription options:
+With custom transcription options (using array syntax or fluent `TranscriptParams` builder):
+
+#### Option A: Fluent `TranscriptParams` Builder
+
+```php
+use AssemblyAI\Laravel\Facades\AssemblyAI;
+use AssemblyAI\Parameters\TranscriptParams;
+use AssemblyAI\Enums\SpeechModel;
+use AssemblyAI\Enums\SummaryType;
+use AssemblyAI\Enums\SummaryModel;
+use AssemblyAI\Enums\PiiPolicy;
+use AssemblyAI\Enums\PiiSubstitution;
+
+$params = TranscriptParams::create('')
+    // Speech Model & Language
+    ->withSpeechModel(SpeechModel::Best) // Best, Nano, Universal2, Universal3Pro, or string
+    ->withLanguageCode('en_us')          // or ->withLanguageDetection(true)
+    // Speaker Diarization
+    ->withSpeakerLabels(enabled: true, speakersExpected: 2)
+    // Formatting & Punctuation
+    ->withPunctuate(true)
+    ->withFormatText(true)
+    // Audio Intelligence
+    ->withAutoChapters(true)
+    ->withSentimentAnalysis(true)
+    ->withEntityDetection(true)
+    ->withSummarization(SummaryType::Bullets, SummaryModel::Informative)
+    // PII Redaction
+    ->withPiiRedaction(
+        policies: [PiiPolicy::EmailAddress, PiiPolicy::PhoneNumber, PiiPolicy::CreditCardNumber],
+        sub: PiiSubstitution::EntityType
+    )
+    // Contextual Prompting & Word Boosting
+    ->withPrompt('Technical podcast discussing machine learning and software architecture')
+    ->withWordBoost(['AssemblyAI', 'PHP', 'SDK'], 'high');
+
+$transcript = AssemblyAI::transcribe(
+    audio: storage_path('app/podcasts/episode-1.mp3'),
+    params: $params,
+    onPoll: function ($pollingTranscript) {
+        logger()->info("Transcription status: {$pollingTranscript->status->value}");
+    }
+);
+```
+
+#### Option B: Associative Array Syntax
 
 ```php
 use AssemblyAI\Laravel\Facades\AssemblyAI;
@@ -110,6 +155,7 @@ use AssemblyAI\Enums\SummaryType;
 $transcript = AssemblyAI::transcribe(
     audio: storage_path('app/podcasts/episode-1.mp3'),
     params: [
+        'speech_model' => SpeechModel::Best, // or 'best', 'nano', 'universal-2'
         'speaker_labels' => true,
         'speakers_expected' => 2,
         'auto_chapters' => true,
@@ -174,8 +220,20 @@ When transcribing long files, submit a background transcription job with a webho
 
 ```php
 use AssemblyAI\Laravel\Facades\AssemblyAI;
+use AssemblyAI\Parameters\TranscriptParams;
 
-$transcript = AssemblyAI::transcripts()->submit([
+// Submit via TranscriptParams builder
+$params = TranscriptParams::create('https://example.com/recording.mp3')
+    ->withWebhook(
+        webhookUrl: route('assemblyai.webhook'),
+        authHeaderName: config('assemblyai.webhook.header'),
+        authHeaderValue: config('assemblyai.webhook.secret'),
+    );
+
+$transcript = AssemblyAI::transcripts()->create($params);
+
+// Or submit via associative array:
+$transcript = AssemblyAI::transcripts()->create([
     'audio_url' => 'https://example.com/recording.mp3',
     'webhook_url' => route('assemblyai.webhook'),
     'webhook_auth_header_name' => config('assemblyai.webhook.header'),
