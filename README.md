@@ -7,6 +7,9 @@
 
 A clean, modern Laravel integration for the [AssemblyAI PHP SDK](https://github.com/alex-volga/assemblyai-php). Provides seamless support for speech-to-text, audio intelligence (summarization, sentiment analysis, entity detection, PII redaction), LeMUR LLM queries, real-time streaming tokens, webhook handling, and comprehensive testing fakes.
 
+> [!NOTE]
+> This package is the official Laravel integration built on top of [alex-volga/assemblyai-php](https://github.com/alex-volga/assemblyai-php). For standalone PHP applications, core SDK architecture, or direct API usage, visit the [AssemblyAI PHP SDK repository](https://github.com/alex-volga/assemblyai-php).
+
 Designed for **Laravel 11, 12, and 13** on **PHP 8.3+**.
 
 ---
@@ -109,24 +112,24 @@ use AssemblyAI\Laravel\Facades\AssemblyAI;
 use AssemblyAI\Parameters\TranscriptParams;
 use AssemblyAI\Enums\SpeechModel;
 use AssemblyAI\Enums\SummaryType;
-use AssemblyAI\Enums\SummaryModel;
+use AssemblyAI\Enums\SummaryEffort;
 use AssemblyAI\Enums\PiiPolicy;
 use AssemblyAI\Enums\PiiSubstitution;
 
 $params = TranscriptParams::create('')
-    // Speech Model & Language
-    ->withSpeechModel(SpeechModel::Best) // Best, Nano, Universal2, Universal3Pro, or string
+    // Speech Models (ordered list with automatic fallback) & Language
+    ->withSpeechModels([SpeechModel::Universal35Pro, SpeechModel::Universal2]) // Universal35Pro, Universal36ProPreview, Universal3Pro, Universal2
     ->withLanguageCode('en_us')          // or ->withLanguageDetection(true)
     // Speaker Diarization
     ->withSpeakerLabels(enabled: true, speakersExpected: 2)
     // Formatting & Punctuation
     ->withPunctuate(true)
     ->withFormatText(true)
-    // Audio Intelligence
+    // Audio Intelligence & Speech Understanding
     ->withAutoChapters(true)
     ->withSentimentAnalysis(true)
     ->withEntityDetection(true)
-    ->withSummarization(SummaryType::Bullets, SummaryModel::Informative)
+    ->withSummarization(SummaryType::Bullets, effort: SummaryEffort::Low)
     // PII Redaction
     ->withPiiRedaction(
         policies: [PiiPolicy::EmailAddress, PiiPolicy::PhoneNumber, PiiPolicy::CreditCardNumber],
@@ -155,7 +158,7 @@ use AssemblyAI\Enums\SummaryType;
 $transcript = AssemblyAI::transcribe(
     audio: storage_path('app/podcasts/episode-1.mp3'),
     params: [
-        'speech_model' => SpeechModel::Best, // or 'best', 'nano', 'universal-2'
+        'speech_models' => [SpeechModel::Universal35Pro, SpeechModel::Universal2],
         'speaker_labels' => true,
         'speakers_expected' => 2,
         'auto_chapters' => true,
@@ -166,9 +169,16 @@ $transcript = AssemblyAI::transcribe(
     }
 );
 
+// Access model used
+echo "Speech model used: {$transcript->speechModelUsed}\n";
+
 // Access utterances and chapters
 foreach ($transcript->utterances as $utterance) {
     echo "Speaker {$utterance->speaker}: {$utterance->text}\n";
+}
+
+foreach ($transcript->chapters as $chapter) {
+    echo "Chapter: {$chapter->headline} - {$chapter->summary}\n";
 }
 ```
 
@@ -447,6 +457,12 @@ Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 ## Security Vulnerabilities
 
 Please review [SECURITY.md](SECURITY.md) on how to report security vulnerabilities.
+
+---
+
+## Related Packages
+
+- [alex-volga/assemblyai-php](https://github.com/alex-volga/assemblyai-php) — Modern AssemblyAI PHP SDK (PSR-7, PSR-17, PSR-18 compliant)
 
 ---
 
